@@ -55,17 +55,17 @@
  *
  */
 import {
-  SpritefulElement, 
+  AppElement, 
   html
-}                  from '@spriteful/spriteful-element/spriteful-element.js';
+}                  from '@longlost/app-element/app-element.js';
 import {
   listen, 
   isOnScreen
-}                  from '@spriteful/utils/utils.js';
+}                  from '@longlost/utils/utils.js';
 import * as lottie from 'lottie-web';
 
 
-class SpritefulLottieSvg extends SpritefulElement {
+class LottieSvg extends AppElement {
   static get is() { return 'lottie-svg'; }
 
   static get template() {
@@ -173,4 +173,4 @@ class SpritefulLottieSvg extends SpritefulElement {
 
 }
 
-window.customElements.define(SpritefulLottieSvg.is, SpritefulLottieSvg);
+window.customElements.define(LottieSvg.is, LottieSvg);
