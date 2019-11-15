@@ -102,7 +102,20 @@ class LottieSvg extends AppElement {
         value: false
       },
 
-      noFade: Boolean
+      noFade: Boolean,
+      // The distance in pixels to pad
+      // to the carousel trigger threshold.
+      // For instance, 0 would mean that the
+      // next lazy image would not start to download
+      // until a single pixel intersects the edge of
+      // the carousel.
+      // Or 128 means that the image would start to
+      // download 128px before the next image comes
+      // into view.
+      trigger: {
+        type: Number,
+        value: 0
+      },
 
     };
   }
@@ -116,42 +129,48 @@ class LottieSvg extends AppElement {
 
 
   async __animationDataChanged(animationData) {
-    if (!animationData || typeof animationData !== 'object') { return; }
+    try {
+      if (!animationData || typeof animationData !== 'object') { return; }
 
-    if (this.domLoaded) {
-      this.animation.destroy();
-      this.domLoaded = false;
+      if (this.domLoaded) {
+        this.animation.destroy();
+        this.domLoaded = false;
+      }
+      // default to a fade in after load
+      if (!this.noFade) {
+        this.$.container.style.transition = 'opacity 0.2s ease-in';
+        this.$.container.style.opacity    = '0';
+      }
+
+      await isOnScreen(this.$.container, this.trigger);
+
+      this.animation = lottie.loadAnimation({
+        animationData,
+        autoplay:  this.autoplay,
+        // cannot use this as container because the svg would be
+        // loaded outside of its shadow dom
+        container: this.$.container, 
+        loop:      this.loop,
+        renderer: 'svg'
+      });
+
+      if (this.events) {
+        listen(this.animation, 'complete',      this.__fireEvent.bind(this));
+        listen(this.animation, 'loopComplete',  this.__fireEvent.bind(this));
+        // listen(this.animation, 'enterFrame',    this.__fireEvent.bind(this));
+        listen(this.animation, 'segmentStart',  this.__fireEvent.bind(this));
+        listen(this.animation, 'destroy',       this.__fireEvent.bind(this));
+      }
+      // listen(this.animation, 'config_ready',  this.__fireEvent.bind(this));
+      // listen(this.animation, 'data_ready',    this.__fireEvent.bind(this));
+      // listen(this.animation, 'data_failed',   this.__fireEvent.bind(this));
+      // listen(this.animation, 'loaded_images', this.__fireEvent.bind(this));
+      listen(this.animation, 'DOMLoaded',     this.__domLoaded.bind(this));
     }
-    // default to a fade in after load
-    if (!this.noFade) {
-      this.$.container.style.transition = 'opacity 0.2s ease-in';
-      this.$.container.style.opacity    = '0';
-    }
-
-    await isOnScreen(this.$.container);
-
-    this.animation = lottie.loadAnimation({
-      animationData,
-      autoplay:  this.autoplay,
-      // cannot use this as container because the svg would be
-      // loaded outside of its shadow dom
-      container: this.$.container, 
-      loop:      this.loop,
-      renderer: 'svg'
-    });
-
-    if (this.events) {
-      listen(this.animation, 'complete',      this.__fireEvent.bind(this));
-      listen(this.animation, 'loopComplete',  this.__fireEvent.bind(this));
-      // listen(this.animation, 'enterFrame',    this.__fireEvent.bind(this));
-      listen(this.animation, 'segmentStart',  this.__fireEvent.bind(this));
-      listen(this.animation, 'destroy',       this.__fireEvent.bind(this));
-    }
-    // listen(this.animation, 'config_ready',  this.__fireEvent.bind(this));
-    // listen(this.animation, 'data_ready',    this.__fireEvent.bind(this));
-    // listen(this.animation, 'data_failed',   this.__fireEvent.bind(this));
-    // listen(this.animation, 'loaded_images', this.__fireEvent.bind(this));
-    listen(this.animation, 'DOMLoaded',     this.__domLoaded.bind(this));
+    catch (error) {
+      if (error === 'Element removed.') { return; } // isOnScreen error.
+      console.error(error);
+    }    
   }
 
 
